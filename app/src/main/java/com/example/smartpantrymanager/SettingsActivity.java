@@ -1,24 +1,31 @@
 package com.example.smartpantrymanager;
 
 import android.os.Bundle;
-
-import androidx.activity.EdgeToEdge;
+import android.widget.Button;
+import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 public class SettingsActivity extends AppCompatActivity {
+
+    private DatabaseHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_settings);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+
+        dbHelper = new DatabaseHelper(this);
+        Button btnClear = findViewById(R.id.btnClearData);
+
+        btnClear.setOnClickListener(v -> new AlertDialog.Builder(this)
+                .setTitle("Delete All Pantry Items")
+                .setMessage("Are you sure you want to clear your pantry?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    dbHelper.getWritableDatabase().delete("pantry", null, null);
+                    Toast.makeText(this, "Pantry cleared", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("No", null)
+                .show());
     }
 }

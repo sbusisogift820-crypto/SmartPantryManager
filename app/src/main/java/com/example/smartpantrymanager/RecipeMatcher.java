@@ -44,7 +44,7 @@ public class RecipeMatcher {
                 ingCursor.close();
 
                 if (canMakeRecipe) {
-                    matchingRecipes.add(new Recipe(recipeId, recipeName, instructions, recipeIngredientList));
+                    matchingRecipes.add(new Recipe(recipeId, recipeName, "General", instructions, recipeIngredientList));
                 }
 
             } while (recipeCursor.moveToNext());

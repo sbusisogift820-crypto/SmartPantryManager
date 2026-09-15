@@ -1,6 +1,7 @@
 package com.example.smartpantrymanager;
 
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -27,10 +28,8 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        List<PantryItem> pantryItems = dbHelper.getPantryList();
-        List<Recipe> recipes = dbHelper.getRecipeList();
-
-        List<Recipe> matchedRecipes = RecipeMatcher.matchRecipes(pantryItems, recipes);
+        Cursor pantryCursor = dbHelper.getAllPantryItems();
+        List<Recipe> matchedRecipes = RecipeMatcher.getStrictlySuggestedRecipes(dbHelper);
 
         if (matchedRecipes.isEmpty()) {
             tvNoRecipes.setVisibility(View.VISIBLE);
