@@ -1,24 +1,101 @@
 package com.example.smartpantrymanager;
 
+import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
-
-import androidx.activity.EdgeToEdge;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
+    private RecyclerView recyclerView;
+    private TextView tvEmpty;
+    private Button btnAdd, btnRecipes;
+    private DatabaseHelper dbHelper;
+    private PantryAdapter adapter;
+    private List<PantryItem> pantryList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+
+        dbHelper = new DatabaseHelper(this);
+        recyclerView = findViewById(R.id.recyclerViewPantry);
+        tvEmpty = findViewById(R.id.tvEmptyPantry);
+        btnAdd = findViewById(R.id.btnAddIngredient);
+        btnRecipes = findViewById(R.id.btnViewRecipes);
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        pantryList = new ArrayList<>();
+
+        btnAdd.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, AddEditIngredientActivity.class);
+            startActivity(intent);
         });
+
+        btnRecipes.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SuggestedRecipesActivity.class);
+            startActivity(intent);
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadPantryItems();
+    }
+
+    private void loadPantryItems() {
+        pantryList.clear();
+        Cursor cursor = dbHelper.getAllPantryItems();
+
+        if (cursor.getCount() == 0) {
+            tvEmpty.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+        } else {
+            tvEmpty.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+
+            while (cursor.moveToNext()) {
+                int id = cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ID));
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_PANTRY_NAME));
+                double qty = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_PANTRY_QTY));
+                String unit = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_PANTRY_UNIT));
+                String expiry = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_PANTRY_EXPIRY));
+
+                pantryList.add(new PantryItem(id, name, qty, unit, expiry));
+            }
+
+            adapter = new PantryAdapter(this, pantryList, new PantryAdapter.OnItemClickListener() {
+                @Override
+                public void onDeleteClick(int id) {
+                    dbHelper.deletePantryItem(id);
+                    Toast.makeText(MainActivity.this, "Item deleted", Toast.LENGTH_SHORT).show();
+                    loadPantryItems();
+                }
+
+                @Override
+                public void onItemClick(PantryItem item) {
+                    Intent intent = new Intent(MainActivity.this, AddEditIngredientActivity.class);
+                    intent.putExtra("ITEM_ID", item.getId());
+                    intent.putExtra("ITEM_NAME", item.getName());
+                    intent.putExtra("ITEM_QTY", item.getQuantity());
+                    intent.putExtra("ITEM_UNIT", item.getUnit());
+                    intent.putExtra("ITEM_EXPIRY", item.getExpiryDate());
+                    startActivity(intent);
+                }
+            });
+
+            recyclerView.setAdapter(adapter);
+        }
+        cursor.close();
     }
 }
