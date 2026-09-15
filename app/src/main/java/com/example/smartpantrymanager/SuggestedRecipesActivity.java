@@ -1,7 +1,6 @@
 package com.example.smartpantrymanager;
 
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -15,39 +14,58 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private TextView tvNoRecipes;
     private DatabaseHelper dbHelper;
-    private RecipeAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_suggested_recipes);
 
-        dbHelper = new DatabaseHelper(this);
         recyclerView = findViewById(R.id.recyclerViewRecipes);
         tvNoRecipes = findViewById(R.id.tvNoRecipes);
+        dbHelper = new DatabaseHelper(this);
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        if (recyclerView != null) {
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        }
+    }
 
-        Cursor pantryCursor = dbHelper.getAllPantryItems();
-        List<Recipe> matchedRecipes = RecipeMatcher.getStrictlySuggestedRecipes(dbHelper);
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh recipes when returning from RecipeDetailActivity (e.g. after cooking)
+        loadSuggestedRecipes();
+    }
 
-        if (matchedRecipes.isEmpty()) {
-            tvNoRecipes.setVisibility(View.VISIBLE);
-            recyclerView.setVisibility(View.GONE);
-        } else {
-            tvNoRecipes.setVisibility(View.GONE);
-            recyclerView.setVisibility(View.VISIBLE);
+    private void loadSuggestedRecipes() {
+        try {
+            List<Recipe> matches = RecipeMatcher.getStrictlySuggestedRecipes(dbHelper);
 
-            adapter = new RecipeAdapter(this, matchedRecipes, recipe -> {
-                Intent intent = new Intent(SuggestedRecipesActivity.this, RecipeDetailActivity.class);
-                intent.putExtra("RECIPE_TITLE", recipe.getTitle());
-                intent.putExtra("RECIPE_CATEGORY", recipe.getCategory());
-                intent.putExtra("RECIPE_INSTRUCTIONS", recipe.getInstructions());
-                intent.putExtra("RECIPE_MATCH", recipe.getMatchPercentage());
-                startActivity(intent);
-            });
+            if (matches == null || matches.isEmpty()) {
+                if (tvNoRecipes != null) tvNoRecipes.setVisibility(View.VISIBLE);
+                if (recyclerView != null) recyclerView.setVisibility(View.GONE);
+            } else {
+                if (tvNoRecipes != null) tvNoRecipes.setVisibility(View.GONE);
+                if (recyclerView != null) {
+                    recyclerView.setVisibility(View.VISIBLE);
 
-            recyclerView.setAdapter(adapter);
+                    // Added click listener to open RecipeDetailActivity
+                    RecipeAdapter adapter = new RecipeAdapter(this, matches, recipe -> {
+                        Intent intent = new Intent(SuggestedRecipesActivity.this, RecipeDetailActivity.class);
+                        intent.putExtra("RECIPE_ID", recipe.getId());
+                        intent.putExtra("RECIPE_TITLE", recipe.getTitle());
+                        intent.putExtra("RECIPE_MATCH", recipe.getMatchPercentage());
+                        startActivity(intent);
+                    });
+
+                    recyclerView.setAdapter(adapter);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (tvNoRecipes != null) {
+                tvNoRecipes.setVisibility(View.VISIBLE);
+                tvNoRecipes.setText("Error loading recipes: " + e.getLocalizedMessage());
+            }
         }
     }
 }

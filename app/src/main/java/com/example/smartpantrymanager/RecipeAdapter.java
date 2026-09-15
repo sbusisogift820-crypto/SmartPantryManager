@@ -1,6 +1,7 @@
 package com.example.smartpantrymanager;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,8 +13,8 @@ import java.util.List;
 
 public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeViewHolder> {
 
-    private Context context;
-    private List<Recipe> recipeList;
+    private final Context context;
+    private final List<Recipe> recipeList;
     private OnRecipeClickListener listener;
 
     public interface OnRecipeClickListener {
@@ -26,6 +27,11 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         this.listener = listener;
     }
 
+    public RecipeAdapter(Context context, List<Recipe> recipeList) {
+        this.context = context;
+        this.recipeList = recipeList;
+    }
+
     @NonNull
     @Override
     public RecipeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -36,21 +42,39 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     @Override
     public void onBindViewHolder(@NonNull RecipeViewHolder holder, int position) {
         Recipe recipe = recipeList.get(position);
-        holder.tvTitle.setText(recipe.getTitle());
-        holder.tvMatch.setText("Match: " + (int) recipe.getMatchPercentage() + "%");
 
-        if (recipe.getMissingIngredients() == null || recipe.getMissingIngredients().isEmpty()) {
-            holder.tvMissing.setText("Missing: None! You have all ingredients.");
+        holder.tvTitle.setText(recipe.getTitle());
+
+        int match = (int) recipe.getMatchPercentage();
+        holder.tvMatch.setText(match + "% Match");
+
+        // Dynamic Badge Styling
+        if (match == 100) {
+            holder.tvMatch.setBackgroundColor(Color.parseColor("#E8F5E9"));
+            holder.tvMatch.setTextColor(Color.parseColor("#2E7D32"));
         } else {
-            holder.tvMissing.setText("Missing: " + TextUtils.join(", ", recipe.getMissingIngredients()));
+            holder.tvMatch.setBackgroundColor(Color.parseColor("#FFF8E1"));
+            holder.tvMatch.setTextColor(Color.parseColor("#F57F17"));
         }
 
-        holder.itemView.setOnClickListener(v -> listener.onRecipeClick(recipe));
+        // FIX: Replaced getIngredients() with getMissingIngredients()
+        List<String> missingIngredients = recipe.getMissingIngredients();
+        if (missingIngredients == null || missingIngredients.isEmpty()) {
+            holder.tvMissing.setText("Ready to cook!");
+        } else {
+            holder.tvMissing.setText("Missing: " + TextUtils.join(", ", missingIngredients));
+        }
+
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onRecipeClick(recipe);
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
-        return recipeList.size();
+        return recipeList != null ? recipeList.size() : 0;
     }
 
     public static class RecipeViewHolder extends RecyclerView.ViewHolder {

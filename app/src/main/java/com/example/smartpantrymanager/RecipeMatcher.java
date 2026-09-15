@@ -3,89 +3,94 @@ package com.example.smartpantrymanager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class RecipeMatcher {
 
     public static List<Recipe> getStrictlySuggestedRecipes(DatabaseHelper dbHelper) {
-        List<Recipe> matchingRecipes = new ArrayList<>();
+        List<Recipe> suggestions = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        Cursor recipeCursor = db.rawQuery("SELECT * FROM " + DatabaseHelper.TABLE_RECIPES, null);
+        Cursor recipeCursor = db.rawQuery("SELECT * FROM recipes", null);
 
         if (recipeCursor.moveToFirst()) {
             do {
-                int recipeId = recipeCursor.getInt(recipeCursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ID));
-                String recipeName = recipeCursor.getString(recipeCursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_RECIPE_NAME));
-                String instructions = recipeCursor.getString(recipeCursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_RECIPE_STEPS));
+                int recipeId = recipeCursor.getInt(recipeCursor.getColumnIndexOrThrow("_id"));
+                String title = recipeCursor.getString(recipeCursor.getColumnIndexOrThrow("name"));
+                String instructions = recipeCursor.getString(recipeCursor.getColumnIndexOrThrow("instructions"));
+                String category = "General";
 
-                Cursor ingCursor = db.rawQuery(
-                        "SELECT * FROM " + DatabaseHelper.TABLE_RECIPE_ING + " WHERE " + DatabaseHelper.COLUMN_ING_RECIPE_ID + "=?",
-                        new String[]{String.valueOf(recipeId)}
-                );
+                Cursor ingCursor = db.rawQuery("SELECT * FROM recipe_ingredients WHERE recipe_id = ?",
+                        new String[]{String.valueOf(recipeId)});
 
-                boolean canMakeRecipe = true;
-                List<String> recipeIngredientList = new ArrayList<>();
+                int totalIngredients = 0;
+                int matchedIngredients = 0;
+                // Inside the recipe loop in RecipeMatcher.java
+                List<String> missingList = new ArrayList<>();
 
                 if (ingCursor.moveToFirst()) {
                     do {
-                        String reqIngName = ingCursor.getString(ingCursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ING_NAME));
-                        double reqQty = ingCursor.getDouble(ingCursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ING_QTY));
-                        String reqUnit = ingCursor.getString(ingCursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ING_UNIT));
+                        totalIngredients++;
+                        String reqName = ingCursor.getString(ingCursor.getColumnIndexOrThrow("ingredient_name"));
+                        double reqQty = ingCursor.getDouble(ingCursor.getColumnIndexOrThrow("required_quantity"));
 
-                        recipeIngredientList.add(reqQty + " " + reqUnit + " " + reqIngName);
-
-                        if (!isIngredientAvailable(db, reqIngName, reqQty)) {
-                            canMakeRecipe = false;
-                            break;
+                        if (isIngredientAvailable(db, reqName, reqQty)) {
+                            matchedIngredients++;
+                        } else {
+                            missingList.add(reqName); // Track missing ingredients
                         }
                     } while (ingCursor.moveToNext());
                 }
                 ingCursor.close();
 
-                if (canMakeRecipe) {
-                    matchingRecipes.add(new Recipe(recipeId, recipeName, "General", instructions, recipeIngredientList));
+                if (totalIngredients > 0) {
+                    double matchPercentage = ((double) matchedIngredients / totalIngredients) * 100.0;
+                    if (matchPercentage > 0) {
+                        Recipe recipe = new Recipe(recipeId, title, category, instructions, missingList);
+                        recipe.setMatchPercentage(matchPercentage);
+                        suggestions.add(recipe);
+                    }
                 }
 
             } while (recipeCursor.moveToNext());
         }
         recipeCursor.close();
-        return matchingRecipes;
+
+        // Sort highest match percentage first
+        Collections.sort(suggestions, (r1, r2) -> Double.compare(r2.getMatchPercentage(), r1.getMatchPercentage()));
+
+        return suggestions;
     }
 
     private static boolean isIngredientAvailable(SQLiteDatabase db, String reqName, double reqQty) {
         String normalizedReq = normalizeName(reqName);
 
-        Cursor pantryCursor = db.rawQuery("SELECT * FROM " + DatabaseHelper.TABLE_PANTRY, null);
-        boolean foundAndSufficient = false;
+        Cursor pantryCursor = db.rawQuery("SELECT * FROM pantry", null);
+        boolean found = false;
 
         if (pantryCursor.moveToFirst()) {
             do {
-                String pantryIngName = pantryCursor.getString(pantryCursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_PANTRY_NAME));
-                double pantryQty = pantryCursor.getDouble(pantryCursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_PANTRY_QTY));
-
+                String pantryIngName = pantryCursor.getString(pantryCursor.getColumnIndexOrThrow("name"));
                 String normalizedPantry = normalizeName(pantryIngName);
 
-                if (normalizedPantry.equalsIgnoreCase(normalizedReq)) {
-                    if (pantryQty >= reqQty) {
-                        foundAndSufficient = true;
-                        break;
-                    }
+                // Flexible string matching (e.g., "Tomato" matches "Tomatoes" or "Tomato Sauce")
+                if (normalizedPantry.contains(normalizedReq) || normalizedReq.contains(normalizedPantry)) {
+                    found = true;
+                    break;
                 }
             } while (pantryCursor.moveToNext());
         }
         pantryCursor.close();
-        return foundAndSufficient;
+
+        return found;
     }
 
     private static String normalizeName(String name) {
         if (name == null) return "";
         String clean = name.trim().toLowerCase();
-        if (clean.endsWith("es")) {
-            return clean.substring(0, clean.length() - 2);
-        } else if (clean.endsWith("s") && !clean.endsWith("ss")) {
-            return clean.substring(0, clean.length() - 1);
-        }
+        if (clean.endsWith("es")) return clean.substring(0, clean.length() - 2);
+        if (clean.endsWith("s") && !clean.endsWith("ss")) return clean.substring(0, clean.length() - 1);
         return clean;
     }
 }
