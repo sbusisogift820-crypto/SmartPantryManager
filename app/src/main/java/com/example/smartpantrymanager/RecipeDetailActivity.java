@@ -1,24 +1,29 @@
 package com.example.smartpantrymanager;
 
 import android.os.Bundle;
-
-import androidx.activity.EdgeToEdge;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 public class RecipeDetailActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_recipe_detail);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+
+        TextView tvTitle = findViewById(R.id.tvDetailTitle);
+        TextView tvCategory = findViewById(R.id.tvDetailCategory);
+        TextView tvMatch = findViewById(R.id.tvDetailMatch);
+        TextView tvInstructions = findViewById(R.id.tvDetailInstructions);
+
+        String title = getIntent().getStringExtra("RECIPE_TITLE");
+        String category = getIntent().getStringExtra("RECIPE_CATEGORY");
+        String instructions = getIntent().getStringExtra("RECIPE_INSTRUCTIONS");
+        double match = getIntent().getDoubleExtra("RECIPE_MATCH", 0.0);
+
+        tvTitle.setText(title);
+        tvCategory.setText("Category: " + category);
+        tvMatch.setText("Match: " + (int) match + "%");
+        tvInstructions.setText(instructions);
     }
 }
