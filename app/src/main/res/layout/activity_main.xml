@@ -3,25 +3,101 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:paddingTop="36dp"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:paddingTop="36dp">
 
-    <TextView
-        android:id="@+id/tvPantryTitle"
-        android:layout_width="wrap_content"
+    <!-- App Logo -->
+    <ImageView
+        android:id="@+id/imgAppLogo"
+        android:layout_width="220dp"
+        android:layout_height="80dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="28dp"
+        android:adjustViewBounds="true"
+        android:contentDescription="Smart Pantry Manager Logo"
+        android:scaleType="fitCenter"
+        android:src="@drawable/app_logo" />
+
+    <!-- Metrics Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardMetrics"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="My Pantry Inventory"
-        android:layout_marginTop="32dp"
-        android:textSize="22sp"
-        android:textStyle="bold" />
+        android:layout_below="@id/imgAppLogo"
+        android:layout_marginHorizontal="4dp"
+        android:layout_marginTop="12dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeColor="#E0E0E0"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:weightSum="2">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvTotalCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total Items"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#E0E0E0" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvExpiringCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="#E65100"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Expiring Soon"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- Search View -->
     <androidx.appcompat.widget.SearchView
         android:id="@+id/searchViewPantry"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/tvPantryTitle"
+        android:layout_below="@id/cardMetrics"
         android:layout_marginTop="12dp"
         app:iconifiedByDefault="false"
         app:queryHint="Search ingredients..." />
@@ -66,6 +142,7 @@
         </com.google.android.material.chip.ChipGroup>
     </HorizontalScrollView>
 
+    <!-- Items List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewPantry"
         android:layout_width="match_parent"
@@ -75,6 +152,7 @@
         android:layout_marginTop="12dp"
         android:layout_marginBottom="12dp" />
 
+    <!-- Empty Pantry Placeholder -->
     <TextView
         android:id="@+id/tvEmptyPantry"
         android:layout_width="wrap_content"
@@ -84,6 +162,7 @@
         android:textSize="16sp"
         android:visibility="gone" />
 
+    <!-- Action Buttons -->
     <LinearLayout
         android:id="@+id/layoutButtons"
         android:layout_width="match_parent"
@@ -107,4 +186,5 @@
             android:layout_weight="1"
             android:text="Suggested Recipes" />
     </LinearLayout>
+
 </RelativeLayout>

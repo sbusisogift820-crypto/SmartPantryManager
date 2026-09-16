@@ -1,6 +1,7 @@
 package com.example.smartpantrymanager;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,19 +9,20 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import java.util.ArrayList;
-import java.util.List;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryViewHolder> {
 
     private Context context;
     private List<PantryItem> pantryList;
-    private List<PantryItem> fullList; // Master copy for live filtering
+    private List<PantryItem> fullList;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
@@ -50,6 +52,41 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
         }
         holder.tvQty.setText("Qty: " + item.getQuantity() + " " + item.getUnit());
 
+        // Expiry Status Badge Logic
+        String expiryStr = item.getExpiryDate();
+        if (expiryStr != null && !expiryStr.trim().isEmpty()) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            try {
+                Date expiryDate = sdf.parse(expiryStr.trim());
+                Date today = new Date();
+
+                Calendar cal3 = Calendar.getInstance();
+                cal3.add(Calendar.DAY_OF_YEAR, 3);
+                Date threeDaysFromNow = cal3.getTime();
+
+                if (expiryDate != null) {
+                    holder.tvExpiryBadge.setVisibility(View.VISIBLE);
+                    if (expiryDate.before(today)) {
+                        holder.tvExpiryBadge.setText("Expired");
+                        holder.tvExpiryBadge.setBackgroundColor(Color.parseColor("#FFCDD2"));
+                        holder.tvExpiryBadge.setTextColor(Color.parseColor("#B71C1C"));
+                    } else if (!expiryDate.after(threeDaysFromNow)) {
+                        holder.tvExpiryBadge.setText("Expiring Soon");
+                        holder.tvExpiryBadge.setBackgroundColor(Color.parseColor("#FFE0B2"));
+                        holder.tvExpiryBadge.setTextColor(Color.parseColor("#E65100"));
+                    } else {
+                        holder.tvExpiryBadge.setText("Fresh");
+                        holder.tvExpiryBadge.setBackgroundColor(Color.parseColor("#C8E6C9"));
+                        holder.tvExpiryBadge.setTextColor(Color.parseColor("#1B5E20"));
+                    }
+                }
+            } catch (ParseException e) {
+                holder.tvExpiryBadge.setVisibility(View.GONE);
+            }
+        } else {
+            holder.tvExpiryBadge.setVisibility(View.GONE);
+        }
+
         holder.btnDelete.setOnClickListener(v -> listener.onDeleteClick(item.getId()));
         holder.itemView.setOnClickListener(v -> listener.onItemClick(item));
     }
@@ -59,19 +96,16 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
         return pantryList.size();
     }
 
-    // Refresh master dataset on reload
     public void updateData(List<PantryItem> newList) {
         this.pantryList = new ArrayList<>(newList);
         this.fullList = new ArrayList<>(newList);
         notifyDataSetChanged();
     }
 
-    // Live search & chip filter method
     public void filter(String query, int chipId) {
         List<PantryItem> filteredList = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
 
-        // Set baseline threshold to 3 days from today
         Calendar targetCalendar = Calendar.getInstance();
         targetCalendar.add(Calendar.DAY_OF_YEAR, 3);
         Date threeDaysFromNow = targetCalendar.getTime();
@@ -85,10 +119,9 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
                 if (expiryStr != null && !expiryStr.trim().isEmpty()) {
                     try {
                         Date expiryDate = sdf.parse(expiryStr.trim());
-                        // Includes items expiring within the next 3 days or already expired
                         matchesChip = expiryDate != null && !expiryDate.after(threeDaysFromNow);
                     } catch (ParseException e) {
-                        matchesChip = false; // Exclude items with invalid date format
+                        matchesChip = false;
                     }
                 } else {
                     matchesChip = false;
@@ -107,13 +140,14 @@ public class PantryAdapter extends RecyclerView.Adapter<PantryAdapter.PantryView
     }
 
     public static class PantryViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvQty;
+        TextView tvName, tvQty, tvExpiryBadge;
         ImageButton btnDelete;
 
         public PantryViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvIngredientName);
             tvQty = itemView.findViewById(R.id.tvQuantity);
+            tvExpiryBadge = itemView.findViewById(R.id.tvExpiryBadge);
             btnDelete = itemView.findViewById(R.id.btnDelete);
         }
     }

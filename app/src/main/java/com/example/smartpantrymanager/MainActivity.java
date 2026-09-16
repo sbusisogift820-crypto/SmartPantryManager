@@ -12,8 +12,13 @@ import androidx.appcompat.widget.SearchView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.chip.ChipGroup;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -132,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
 
         adapter.updateData(pantryList);
         applyCurrentFilters();
+        updateMetrics(); // Updates the total count and expiring count card
     }
 
     private void applyCurrentFilters() {
@@ -140,5 +146,42 @@ public class MainActivity extends AppCompatActivity {
             int checkedChipId = (chipGroup != null) ? chipGroup.getCheckedChipId() : View.NO_ID;
             adapter.filter(query, checkedChipId);
         }
+    }
+
+    private void updateMetrics() {
+        TextView tvTotal = findViewById(R.id.tvTotalCount);
+        TextView tvExpiring = findViewById(R.id.tvExpiringCount);
+
+        if (tvTotal == null || tvExpiring == null) return;
+        if (pantryList == null) {
+            tvTotal.setText("0");
+            tvExpiring.setText("0");
+            return;
+        }
+
+        int totalItems = pantryList.size();
+        int expiringSoonCount = 0;
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DAY_OF_YEAR, 3);
+        Date threeDaysFromNow = cal.getTime();
+
+        for (PantryItem item : pantryList) {
+            if (item != null) {
+                String expiryStr = item.getExpiryDate();
+                if (expiryStr != null && !expiryStr.trim().isEmpty()) {
+                    try {
+                        Date expiryDate = sdf.parse(expiryStr.trim());
+                        if (expiryDate != null && !expiryDate.after(threeDaysFromNow)) {
+                            expiringSoonCount++;
+                        }
+                    } catch (ParseException ignored) {}
+                }
+            }
+        }
+
+        tvTotal.setText(String.valueOf(totalItems));
+        tvExpiring.setText(String.valueOf(expiringSoonCount));
     }
 }

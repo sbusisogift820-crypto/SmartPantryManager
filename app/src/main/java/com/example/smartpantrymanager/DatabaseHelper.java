@@ -149,4 +149,30 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cv.put(COLUMN_ING_UNIT, unit.trim().toLowerCase());
         db.insert(TABLE_RECIPE_ING, null, cv);
     }
+
+    public void deductIngredientQuantity(String ingredientName, double amountToDeduct) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.rawQuery("SELECT " + COLUMN_ID + ", " + COLUMN_PANTRY_QTY +
+                        " FROM " + TABLE_PANTRY +
+                        " WHERE LOWER(" + COLUMN_PANTRY_NAME + ") = ?",
+                new String[]{ingredientName.toLowerCase().trim()});
+
+        if (cursor != null && cursor.moveToFirst()) {
+            int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID));
+            double currentQty = cursor.getDouble(cursor.getColumnIndexOrThrow(COLUMN_PANTRY_QTY));
+            double newQty = currentQty - amountToDeduct;
+
+            if (newQty <= 0) {
+                // Delete item if quantity hits 0
+                db.delete(TABLE_PANTRY, COLUMN_ID + " = ?", new String[]{String.valueOf(id)});
+            } else {
+                // Update item with remaining quantity
+                ContentValues values = new ContentValues();
+                values.put(COLUMN_PANTRY_QTY, newQty);
+                db.update(TABLE_PANTRY, values, COLUMN_ID + " = ?", new String[]{String.valueOf(id)});
+            }
+        }
+        if (cursor != null) cursor.close();
+    }
+
 }

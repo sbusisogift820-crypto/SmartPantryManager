@@ -29,6 +29,17 @@
             android:text="Qty: 2 pcs"
             android:textSize="14sp" />
 
+        <TextView
+            android:id="@+id/tvExpiryBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
         <ImageButton
             android:id="@+id/btnDelete"
             android:layout_width="wrap_content"
