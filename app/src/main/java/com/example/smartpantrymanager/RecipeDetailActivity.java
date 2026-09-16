@@ -8,6 +8,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.button.MaterialButton;
 import android.widget.TextView;
+import android.view.View;
+import android.widget.ImageButton;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +24,12 @@ public class RecipeDetailActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recipe_detail);
+
+        // Bind back button
+        ImageButton btnBack = findViewById(R.id.btnBackDetail);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
         dbHelper = new DatabaseHelper(this);
 
@@ -51,6 +59,10 @@ public class RecipeDetailActivity extends AppCompatActivity {
         loadRecipeDetails(recipeId);
 
         btnCook.setOnClickListener(v -> deductIngredientsAndFinish());
+    }
+
+    public void onBackClicked(View view) {
+        finish();
     }
 
     private void loadRecipeDetails(int recipeId) {

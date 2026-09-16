@@ -28,8 +28,9 @@
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".SuggestedRecipesActivity"
-            android:screenOrientation="portrait" />
+        android:name=".SuggestedRecipesActivity"
+        android:parentActivityName=".MainActivity"
+        android:screenOrientation="portrait" />
 
         <activity
             android:name=".RecipeDetailActivity"

@@ -1,45 +1,63 @@
 package com.example.smartpantrymanager;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class AddEditIngredientActivity extends AppCompatActivity {
 
+    private TextView tvTitle;
     private EditText etName, etQuantity, etUnit, etExpiry;
     private Button btnSave;
-    private TextView tvTitle;
     private DatabaseHelper dbHelper;
-    private int itemId = -1;
+    private int itemId = -1; // -1 indicates creation mode
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_edit_ingredient);
 
-        dbHelper = new DatabaseHelper(this);
+        // 1. Initialize views
+        ImageButton btnBack = findViewById(R.id.btnBack);
         tvTitle = findViewById(R.id.tvFormTitle);
         etName = findViewById(R.id.etName);
         etQuantity = findViewById(R.id.etQuantity);
         etUnit = findViewById(R.id.etUnit);
         etExpiry = findViewById(R.id.etExpiry);
         btnSave = findViewById(R.id.btnSave);
+        dbHelper = new DatabaseHelper(this);
 
-        // Check if editing an existing item
-        if (getIntent().hasExtra("ITEM_ID")) {
-            itemId = getIntent().getIntExtra("ITEM_ID", -1);
-            tvTitle.setText("Edit Pantry Item");
-            etName.setText(getIntent().getStringExtra("ITEM_NAME"));
-            etQuantity.setText(String.valueOf(getIntent().getDoubleExtra("ITEM_QTY", 0)));
-            etUnit.setText(getIntent().getStringExtra("ITEM_UNIT"));
-            etExpiry.setText(getIntent().getStringExtra("ITEM_EXPIRY"));
+        // 2. Set up back button navigation
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
         }
 
-        btnSave.setOnClickListener(v -> saveIngredient());
+        // 3. Check if editing an existing item
+        if (getIntent().hasExtra("ITEM_ID")) {
+            itemId = getIntent().getIntExtra("ITEM_ID", -1);
+            if (tvTitle != null) tvTitle.setText("Edit Pantry Item");
+            if (etName != null) etName.setText(getIntent().getStringExtra("ITEM_NAME"));
+            if (etQuantity != null) etQuantity.setText(String.valueOf(getIntent().getDoubleExtra("ITEM_QUANTITY", 0.0)));
+            if (etUnit != null) etUnit.setText(getIntent().getStringExtra("ITEM_UNIT"));
+            if (etExpiry != null) etExpiry.setText(getIntent().getStringExtra("ITEM_EXPIRY"));
+        }
+
+        // 4. Save button listener
+        if (btnSave != null) {
+            btnSave.setOnClickListener(v -> saveIngredient());
+        }
+    }
+
+    // Backup XML onClick handler for back button
+    public void onBackClicked(View view) {
+        finish();
     }
 
     private void saveIngredient() {
@@ -48,17 +66,8 @@ public class AddEditIngredientActivity extends AppCompatActivity {
         String unit = etUnit.getText().toString().trim();
         String expiry = etExpiry.getText().toString().trim();
 
-        // Form Validation
-        if (TextUtils.isEmpty(name)) {
-            etName.setError("Ingredient name is required");
-            return;
-        }
-        if (TextUtils.isEmpty(qtyStr)) {
-            etQuantity.setError("Quantity is required");
-            return;
-        }
-        if (TextUtils.isEmpty(unit)) {
-            etUnit.setError("Unit is required");
+        if (name.isEmpty() || qtyStr.isEmpty()) {
+            Toast.makeText(this, "Please enter at least a name and quantity", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -66,22 +75,27 @@ public class AddEditIngredientActivity extends AppCompatActivity {
         try {
             quantity = Double.parseDouble(qtyStr);
         } catch (NumberFormatException e) {
-            etQuantity.setError("Enter a valid number");
+            Toast.makeText(this, "Invalid quantity value", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        boolean success;
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("name", name);
+        values.put("quantity", quantity);
+        values.put("unit", unit);
+        values.put("expiry_date", expiry);
+
         if (itemId == -1) {
-            success = dbHelper.addPantryItem(name, quantity, unit, expiry);
+            // Insert new pantry item
+            db.insert("pantry", null, values);
+            Toast.makeText(this, "Item added to pantry", Toast.LENGTH_SHORT).show();
         } else {
-            success = dbHelper.updatePantryItem(itemId, name, quantity, unit, expiry);
+            // Update existing item
+            db.update("pantry", values, "id = ?", new String[]{String.valueOf(itemId)});
+            Toast.makeText(this, "Pantry item updated", Toast.LENGTH_SHORT).show();
         }
 
-        if (success) {
-            Toast.makeText(this, "Item saved successfully", Toast.LENGTH_SHORT).show();
-            finish();
-        } else {
-            Toast.makeText(this, "Error saving item", Toast.LENGTH_SHORT).show();
-        }
+        finish();
     }
 }
