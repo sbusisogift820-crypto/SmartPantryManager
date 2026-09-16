@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Primary Brand Colors (Matched to Logo Teal) -->
+    <color name="colorPrimary">#0D7C66</color>
+    <color name="colorPrimaryDark">#074B3E</color>
+    <color name="colorAccent">#41B3A3</color>
+
+    <!-- Material Theme Mapping -->
+    <color name="teal_200">#41B3A3</color>
+    <color name="teal_700">#0D7C66</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Status & Warning Badges -->
+    <color name="status_expired">#D32F2F</color>
+    <color name="status_expiring_soon">#E65100</color>
+    <color name="status_fresh">#2E7D32</color>
 </resources>
